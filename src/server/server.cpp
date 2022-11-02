@@ -22,7 +22,13 @@ using namespace std;
 #define BACKLOG 1024
 int Club::n = 0;
 
-typedef int (*LPFN_COMMAND)(int);
+class ARGS{
+public:
+	int *fd;
+	Manager *mngr;
+};
+
+typedef int (*LPFN_COMMAND)(int, Manager&);
 
 class item{
 public:
@@ -41,7 +47,7 @@ public:
 	string choiceMsg;
 };
 
-void mainPage(int sd){
+void mainPage(int sd, Manager& mngr){
 	// send(sd, "hi", strlen("hi"), 0);
 	// sleep(10);
 	int i, menu;
@@ -101,7 +107,7 @@ void mainPage(int sd){
 		//메뉴입력에 따라 분기 하여 해당 기능을 수행한다.
 		if (1 <= menu && menu <= lpMenu->menuCount) {
 			if (NULL != menuItem[menu-1].fnCommand) {
-				menuItem[menu-1].fnCommand(sd);
+				menuItem[menu-1].fnCommand(sd, mngr);
 			} else {
 				printf("함수가 존재하지 않습니다.\n");
 			}	
@@ -116,8 +122,11 @@ void mainPage(int sd){
 
 void* start_main(void* arg)
 {
-	int sd = *((int*) arg);	
-	mainPage(sd);
+	ARGS* params = (ARGS*) arg;
+	Manager mngr = *(params->mngr);	
+	int sd = *(params->fd);
+
+	mainPage(sd, mngr);
 	close(sd);
 	return NULL;
 }
@@ -127,6 +136,9 @@ void* start_main(void* arg)
 char line[]="\n─────────────────────────────────────────────────────────────────────\n";
 char thick_line[]="\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
+
+
+
 int main(){
 
 	int sockfd, new_fd;
@@ -135,6 +147,7 @@ int main(){
 	int sin_size;
 	int yes=1;
 	pthread_t tid;
+	Manager mngr;
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
@@ -175,7 +188,12 @@ int main(){
 			continue;
 		}
 		printf("server : got connection from %s \n", inet_ntoa(their_addr.sin_addr));
-		if(pthread_create(&tid, NULL, start_main, &new_fd)!=0) {
+		ARGS *params = new ARGS();
+		params->fd = &new_fd;
+		params->mngr = &mngr;
+		
+
+		if(pthread_create(&tid, NULL, start_main, params)!=0) {
 			perror("pthread_create");
 		} else {
 			pthread_detach(tid);

@@ -1,28 +1,19 @@
-INC = ../../include
-CFLAGS = -fPIC -c  -g
-OBJS = menu.o profile.o input.o
-TARGET = libmenu.so libarray.so libhash.so
+INC = ../../include # login.cpp랑 joinMember.cpp에서 "manager.h" include해서
+CFLAGS = -fPIC -c -g # 공유라이브러리를 만들기 위한 .o파일을 만들기 위함
+TARGET = liblogin.so libjoinMember.so
 
 all: $(TARGET)
 
-libmenu.so: $(OBJS)
-	$(LD) -shared -o $@ $(OBJS)
+liblogin.so: login.cpp 
+	g++ -shared -fPIC -I$(INC) -o $@ $<
 	cp $@ ../../lib/
-#	cp lib$@.so ../../bin/
 
-
-libarray.so: array.o 
-	$(LD) -shared -o $@ $<
+libjoinMember.so: joinMember.cpp 
+	g++ -shared -fPIC -I$(INC) -o $@ $<
 	cp $@ ../../lib/
-#	cp lib$@.so ../../bin/
 
-libhash.so: hash.o 
-	$(LD) -shared -o $@ $<
-	cp $@ ../../lib/
-#	cp lib$@.so ../../bin/
-
-.c.o:
-	$(CC) $(CFLAGS) -I$(INC) $< 
+# .cpp.o:
+# 	g++ $(CFLAGS) -I$(INC) $< 
 
 clean:
 	rm *.o lib*.so 

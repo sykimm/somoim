@@ -2,6 +2,7 @@
 #define _MANAGER_H
 #include <string>
 #include <vector>
+#include <iostream>
 #include "leader.h"
 #include "club.h"
 #include "post.h"
@@ -21,10 +22,12 @@ class Manager{
     vector<Post*> post_mng;
     
 public:
-    Manager(){};
+    Manager(){
+        cout << "생성자" << endl;
+    };
     ~Manager(){};
-    bool joinMember();
-    bool login(Member& m);
+    bool join(int sd);
+    bool login(int sd, Member& m);
     void clubPage(vector<Club*>::iterator it);
     void showAllClubs();
     void searchClub();

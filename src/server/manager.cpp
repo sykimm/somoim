@@ -1,13 +1,21 @@
 #include <iostream>
+#include <cstring>
+#include <sys/types.h>
+#include <sys/socket.h>
 using namespace std;
 #include "manager.h"
 // #include "member.h"
 
 
-bool Manager::joinMember(){ //회원가입
+bool Manager::join(int sd){ //회원가입
     string id;
-    cout << "ID 입력>>";
-    cin >> id;
+    int n;
+    char buf[1024];
+    sprintf(buf,"%s", "ID 입력>>");
+    send(sd, buf, strlen(buf), 0);
+    n = recv(sd, buf, sizeof(buf), 0);
+    buf[n] = '\0';
+    id = buf;
     
     Member* m = new Member(id);
     memArr.push_back(m);
@@ -17,10 +25,15 @@ bool Manager::joinMember(){ //회원가입
     return true;
 }
 
-bool Manager::login(Member& m){
+bool Manager::login(int sd, Member& m){
     string id;
-    cout << "ID 입력>>";
-    cin >> id;
+    int n;
+    char buf[1024];
+    sprintf(buf,"%s", "ID 입력>>");
+    send(sd, buf, strlen(buf), 0);
+    n = recv(sd, buf, sizeof(buf), 0);
+    buf[n] = '\0';
+    id = buf;
 
     for(auto it=memArr.begin(); it!=memArr.end(); it++){
         if ((*it)->getId() == id){
