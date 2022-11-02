@@ -1,12 +1,14 @@
 INC = ../../include
-OBJS = main.o manager.o member.o
+LDFLAGS = -L../libsrc -ljoinMember -llogin -lpthread -ldl # -L../libsrc -lmenu -lhash -lpthread -ldl
+OBJS = server.o manager.o member.o
 SRCS = $(OBJS:.o=.cpp)
 
-a.out: $(OBJS)
-	g++ -o $@ $(OBJS)
+
+server: $(OBJS)
+	g++ -o $@ $(OBJS) $(LDFLAGS)
 
 .cpp.o: $(SRCS)
-	g++ -c -I$(INC) $<
+	g++ -c -g -I$(INC) $<
 
 clean:
-	rm $(OBJS) a.out
+	rm $(OBJS) server
