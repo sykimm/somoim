@@ -9,6 +9,8 @@
 using namespace std;
 
 
+void sendMsg(int sd, string s);
+
 class Manager{
     // 회원리스트
     vector<Member*> memArr;
@@ -28,11 +30,12 @@ public:
     ~Manager(){};
     bool join(int sd);
     bool login(int sd, Member& m);
-    void clubPage(vector<Club*>::iterator it);
-    void showAllClubs();
+    void clubPage(int sd, vector<Club*>::iterator it);
+    void showAllClubs(int sd);
     void searchClub();
-    void makeClub(Member& l);
-    void showMyClubs(string id);
+    void makeClub(int sd, Member& l);
+    void showMyClubs(int sd, string id);
 };
+
 
 #endif
