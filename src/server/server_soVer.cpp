@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-// #include <string.h>
-#include <string>
-#include <cstring>
+#include <string.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -30,77 +28,75 @@ public:
 	Manager *mngr;
 };
 
-// void sendMsg(int sd, string s){
-// 	// send(sd, s, strlen(s), 0);
-// 	send(sd, s.c_str(), s.size(), 0);
-// }
+typedef int (*LPFN_COMMAND)(int, Manager&);
 
+class item{
+public:
+	void *handle;
+	string menuTitle;
+	string sharedObjectName;
+	string commandName;
+	LPFN_COMMAND fnCommand;
+};
 
-void loginPage(int sd, Manager& mngr, Member& m){
-	int menu, n;
-	char choice[2];
-
-	while (1){
-		//메뉴를 출력한다.
-		sendMsg(sd, "---로그인페이지---\n");
-		sendMsg(sd, "[1] 전체모임\n");
-		sendMsg(sd, "[2] 모임검색\n");
-		sendMsg(sd, "[3] 나의모임\n");
-		sendMsg(sd, "[4] 모임개설\n");
-		sendMsg(sd, "[5] 로그아웃\n");
-		
-		//메뉴를 입력받는다.
-		sendMsg(sd, "선택>> ");
-		n = recv(sd, choice, sizeof(choice), 0);
-		choice[n]='\0';
-		if(choice[0]=='\n')
-			continue;
-		menu = atoi(choice);
-		cout << "from Client> " << menu << endl;
-			
-		//메뉴입력에 따라 분기 하여 해당 기능을 수행한다.
-		switch(menu){
-		case 1: // 전체모임
-            mngr.showAllClubs(sd, m);
-            break;
-        case 2: // 모임검색
-            mngr.searchClub();
-            break;
-        case 3: // 나의모임
-            mngr.showMyClubs(sd, m.getId());
-            break;
-        case 4: // 모임개설
-            cout << m.getId() << "가 main.cpp에서 모임개설을 위해 makeClub()을 부릅니다. " << endl;
-            mngr.makeClub(sd, m);
-            break;
-        case 5: // 로그아웃
-            return; // 메인페이지로 돌아감
-		default:
-			sendMsg(sd, "잘못 입력되었습니다");
-			break;
-		}
-	}
-
-}
-
+class Menu{
+public:
+	string mainTitle;
+	int menuCount;
+	item menuItem[2];
+	string choiceMsg;
+};
 
 void mainPage(int sd, Manager& mngr){
+	// send(sd, "hi", strlen("hi"), 0);
+	// sleep(10);
 	int i, menu;
-	Member m;
-	int n;
-	char choice[2];
-	char buffer[1024];
+	void* handle;
+	Menu *lpMenu = new Menu();
 	
+	lpMenu->mainTitle = "---메인페이지---";
+	lpMenu->menuCount = 2;
+	lpMenu->choiceMsg = "선택>> ";
+	/////////
+	lpMenu->menuItem[0].menuTitle = "[1] 로그인";
+	lpMenu->menuItem[0].sharedObjectName = "/home/mobis/ksy/final/src/libsrc/liblogin.so";
+	lpMenu->menuItem[0].commandName = "login";
+	handle = dlopen(lpMenu->menuItem[0].sharedObjectName.c_str(), RTLD_LAZY);
+	if (NULL == handle) return;
+	lpMenu->menuItem[0].fnCommand = (LPFN_COMMAND)dlsym(handle, lpMenu->menuItem[0].commandName.c_str());
+	lpMenu->menuItem[0].handle = handle;
+	/////////
+	lpMenu->menuItem[1].menuTitle = "[2] 회원가입";
+	lpMenu->menuItem[1].sharedObjectName = "/home/mobis/ksy/final/src/libsrc/libjoinMember.so";
+	lpMenu->menuItem[1].commandName = "joinMember";
+	handle = dlopen(lpMenu->menuItem[1].sharedObjectName.c_str(), RTLD_LAZY);
+	if (NULL == handle) return;
+	lpMenu->menuItem[1].fnCommand = (LPFN_COMMAND)dlsym(handle, lpMenu->menuItem[1].commandName.c_str());
+	lpMenu->menuItem[1].handle = handle;
+
+
+	const item* menuItem;
+	menuItem = lpMenu->menuItem;
+
 	while (1) {
         //메뉴를 출력한다.
-		sendMsg(sd, "---메인페이지---\n");
-		sendMsg(sd, "[1] 로그인\n");
-		sendMsg(sd, "[2] 회원가입\n");
-		sendMsg(sd, "[3] 종료\n");
+		send(sd, lpMenu->mainTitle.c_str(), lpMenu->mainTitle.size(), 0);
+		send(sd, "\n", strlen("\n"), 0);
+		for (i=0; i<lpMenu->menuCount; i++){
+			send(sd, menuItem[i].menuTitle.c_str(), menuItem[i].menuTitle.size(), 0);
+			send(sd, "\n", strlen("\n"), 0);
+		}
+
+		char buffer[1024];
+		int n;
+		char choice[2];
+		sprintf(buffer,"[%d] 종료\n", i+1);
+		send(sd, buffer, strlen(buffer), 0);
 		
 		//메뉴를 입력받는다.
-		sendMsg(sd, "선택>> ");
-		n = recv(sd, choice, sizeof(choice), 0);
+		sprintf(buffer, "%s", lpMenu->choiceMsg.c_str());
+		send(sd, buffer, strlen(buffer), 0);
+		n=recv(sd, choice, sizeof(choice), 0);
 		choice[n]='\0';
 		if(choice[0]=='\n')
 			continue;
@@ -109,27 +105,16 @@ void mainPage(int sd, Manager& mngr){
 		cout << "from Client> " << menu << endl;
 			
 		//메뉴입력에 따라 분기 하여 해당 기능을 수행한다.
-		switch(menu){
-		case 1:
-			if (mngr.login(sd, m)){
-				cout << "main()에서 login해서 받아온 m의 id : " << m.getId() << endl;
-				sendMsg(sd, m.getId() + "님 안녕하세요!\n");
-				loginPage(sd, mngr, m);
-			}else{
-				sendMsg(sd, "해당 id의 회원이 없습니다.\n");
-			}
-			break;
-		case 2:
-			if (mngr.join(sd))
-				sendMsg(sd, "회원가입 성공\n");
-			else
-				sendMsg(sd, "회원가입 실패\n");
-            break;
-		case 3:
+		if (1 <= menu && menu <= lpMenu->menuCount) {
+			if (NULL != menuItem[menu-1].fnCommand) {
+				menuItem[menu-1].fnCommand(sd, mngr);
+			} else {
+				printf("함수가 존재하지 않습니다.\n");
+			}	
+		} else if ((lpMenu->menuCount+1) == menu) {
 			return;
-		default:
-			sendMsg(sd, "잘못 입력되었습니다");
-			break;
+		} else {
+			printf("잘못입력되었습니다\n");
 		}
     }
 }
