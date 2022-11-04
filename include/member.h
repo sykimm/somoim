@@ -10,7 +10,9 @@
 class Member{
 protected:
     string id; // 이름이나 쓰게
-    // vector<Club*> myClubs;
+    string passwd;
+    string name;
+    string phoneNo; 
     vector<string> srchList;
 public:
     Member(){ }
