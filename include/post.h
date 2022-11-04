@@ -13,7 +13,7 @@ class Post {
     string content;
     string time;
     int likes;
-    vector<map<int, string>> replys;
+    vector<string> replys;
 public:
     static int n;
     Post(string writer){   // 작성하기 누르면
@@ -23,8 +23,22 @@ public:
     ~Post(){};
     void setTitle(string s) { this->title = s; }
     string getTitle() { return title; }
+    string getWriter() { return memId; }
+    string getContent() { return content; }
     void setContent(string s) { this->content = s; }
     void upload(); // time 설정
-    void addReply(map<int, string> reply);
-    void delReply(int rid);
+    void addReply(int sd){
+        sendMsg(sd, ">> ");
+        char reply[2048];
+        recvMsg(sd, reply);
+        replys.push_back(reply);
+    }
+    void showReplys(int sd){
+        int i=0;
+        char buf[1024];
+        for(string r: replys){
+            sprintf(buf, "%2d] %s\n", ++i, r.c_str());
+            sendMsg(sd, buf);
+        }
+    }
 };

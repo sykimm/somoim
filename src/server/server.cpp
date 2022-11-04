@@ -68,15 +68,12 @@ void loginPage(int sd, Manager& mngr, Member& m){
             mngr.searchClub();
             break;
         case 3: // 나의모임
-            mngr.showMyClubs(sd, m.getId());
+            mngr.showMyClubs(m, sd);
             break;
         case 4: // 모임개설
-            cout << m.getId() << "가 main.cpp에서 모임개설을 위해 makeClub()을 부릅니다. " << endl;
             mngr.makeClub(sd, m);
-			// mngr.enterChat(m.getId(), sd);
             break;
         case 5: // 로그아웃
-			// mngr.exitChat(m.getId(), sd);
             return; // 메인페이지로 돌아감
 		default:
 			sendMsg(sd, "잘못 입력되었습니다");
@@ -117,7 +114,6 @@ void mainPage(int sd, Manager& mngr){
 			if (mngr.login(sd, m)){
 				cout << "main()에서 login해서 받아온 m의 id : " << m.getId() << endl;
 				sendMsg(sd, m.getId() + "님 안녕하세요!\n");
-				// mngr.enterChat(m.getId(), sd);
 				loginPage(sd, mngr, m);
 			}else{
 				sendMsg(sd, "해당 id의 회원이 없습니다.\n");

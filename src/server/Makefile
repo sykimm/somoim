@@ -1,6 +1,6 @@
 INC = ../../include
 LDFLAGS = -lpthread -ldl # -L../libsrc -lmenu -lhash -lpthread -ldl
-OBJS = server.o member.o manager.o
+OBJS = server.o manager.o util.o club.o
 SRCS = $(OBJS:.o=.cpp)
 
 server: $(OBJS)
