@@ -4,10 +4,13 @@
 #include <iostream>
 #include <filesystem>
 #include <dirent.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
+#include <vector>
 using namespace std;
-#include "club.h"   
+#include "club.h"
 
 
 Club::Club(){ 
@@ -175,24 +178,151 @@ void Club::boardPage(int sd, string mid){
     }
 }
 
-
-void Club::showArchive(){
-    char cwd[512], ard[1024];
-    getcwd(cwd, sizeof(cwd));
-    sprintf(ard, "%s/database/%s", cwd, to_string(cid).c_str());
-    int status = mkdir("/tmp/a/b/c", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    
-    
+void Club::download(int sd){
+    char cwd[512], archive[1024], buf[1024], fullname[2048], fbuf[256], clientDir[2048];
     DIR *dir;
     struct dirent *ent;
-    if ((dir = opendir(ard)) != NULL) {
-        /* print all the files and directories within directory */
-        while ((ent = readdir(dir)) != NULL) {
-            printf ("%s\n", ent->d_name);
+    int i, n;
+    char choice[2];
+    int menu;
+    vector<string> fileList;
+    FILE* file;
+    size_t size;
+    int nsize, fpsize;
+    unsigned long fsize;
+    int pid;
+
+    getcwd(cwd, sizeof(cwd)); // 서버에 있는 db 위치
+    sprintf(archive, "%s/database/%s", cwd, to_string(cid).c_str()); // 서버에 있는 이 모임에 대한 db 위치
+    
+
+    while (1){
+        i = 0;
+        sendMsg(sd, "다운로드 받을 파일번호 선택(나가기: -1)\n");
+        fileList.clear();
+        dir = opendir(archive);
+        if (dir != NULL) {
+            while (1) {
+                ent = readdir(dir);
+                if (ent == NULL){
+                    break;
+                }else{
+                    if (ent->d_type == DT_REG){
+                        sprintf(buf, "%d] %s\n", ++i, ent->d_name);
+                        sendMsg(sd, buf);
+                        fileList.push_back(ent->d_name);
+                    }
+                }
+            }
+            closedir(dir);
+        }else{ /* could not open directory */
+            perror ("opendir");
         }
-        closedir(dir);
-    } else {
-        /* could not open directory */
-        perror ("opendir");
+
+        recvMsg(sd, choice);
+        if(choice[0]=='\n')
+            continue;
+        menu = atoi(choice);
+        if (menu == -1)
+            return;
+        else if (menu >= 0 && menu <= fileList.size()){
+            // sprintf(clientDir, "TrAnSfEr %s", ent->d_name);
+            pid = fork();
+            if (pid == -1)
+                perror("fork()");
+            else if (pid == 0){ // child
+
+            }else{ // 부모
+                while (1){
+					ret = waitpid(pid, &status, WNOHANG);
+					if(ret == 0){ // 2. 변화 없는 경우
+						continue;
+					}else if (ret == -1){ // 2. 에러
+						perror("waitpid");
+					}else{ // 자식이끝나서 pid 반환하는 경우
+						break;
+					}
+				}
+            }
+
+            cout << "TrAnSfEr" << "send!!" << endl;
+
+            
+            sendMsg(sd, "TrAnSfEr");
+            cout << ent->d_name << "send!!" << endl;
+            sendMsg(sd, ent->d_name);
+            
+            // n = recv(sd, clientDir, sizeof(clientDir), 0);
+            // clientDir[n] = '\0';
+            // cout << "clientDir: " << clientDir << endl;
+
+            sprintf(fullname, "%s/%s", archive, ent->d_name);
+            file = fopen(fullname, "rb"); // binary로 open
+            
+            if (file != NULL){
+                fseek(file, 0, SEEK_END); //파일포인터 끝으로 이동해서
+                fsize = ftell(file); // 파일 크기 계산
+                fseek(file, 0, SEEK_SET); // 파일포인터 처음으로 이동
+                size = htonl(fsize); // from host byte order to network byte order.
+                // send(sd, &size, sizeof(fsize), 0); // 파일크기 전송
+                nsize = 0;
+                while (nsize != fsize){
+                    fpsize = fread(fbuf, 1, 256, file); // 256씩읽어서 fbuf에 뒀다가
+                    nsize += fpsize;
+                    send(sd, fbuf, fpsize, 0);
+                }
+                // fread(fbuf, sizeof(char), fsize, file);
+                // send(sd, fbuf, fsize, 0);
+                fclose(file);
+            }
+
+            
+        }
+        else{
+            sendMsg(sd, "잘못 선택했습니다\n");
+        }
     }
+
+
+}
+
+
+void Club::showArchive(int sd){
+    
+    char choice[2], buf[1024];
+    int menu;
+
+    while (1){
+        sprintf(buf, "---%s 자료실 페이지---\n", clubName.c_str());
+        sendMsg(sd, buf);
+        sendMsg(sd, "[1] 자료 업로드\n");
+        sendMsg(sd, "[2] 자료 다운로드\n");
+        sendMsg(sd, "[3] 나가기\n");
+
+        recvMsg(sd, choice);
+        if(choice[0]=='\n')
+            continue;
+        menu = atoi(choice);
+
+        switch(menu){
+        case 1:
+            upload(sd);
+            break;
+        case 2:
+            download(sd);
+            break;
+        case 3:
+            return;
+            break;
+        default:
+            sendMsg(sd, "잘못 선택하셨습니다.\n");
+            break;
+        }
+    }
+
+
+
+    
+    
+    
 }

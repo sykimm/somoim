@@ -40,5 +40,7 @@ public:
     void delPost(int sd);
     void searchPost(int sd);
     void boardPage(int sd, string mid);
-    void showArchive();
+    void showArchive(int sd);
+    void download(int sd);
+    void upload(int sd) {};
 };

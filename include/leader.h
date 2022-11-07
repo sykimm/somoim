@@ -4,7 +4,7 @@ using namespace std;
 
 class Leader : public Operator {
 public:
-    Leader(string id) : Operator(id) {}
+    Leader(string id, string passwd) : Operator(id, passwd) {}
     virtual ~Leader() {}
     bool dropMember(int id);
     virtual bool delPost(int pid) { return true; } // 남이 쓴 포스트도 삭제 가능

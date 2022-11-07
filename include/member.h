@@ -17,11 +17,13 @@ protected:
     set<int> clubSet; // 가입한 모임id 리스트
 public:
     Member(){ }
-    Member(string id){
+    Member(string id, string pw){
         this->id = id;
+        this->passwd = pw;
     }
     virtual ~Member() {}
     string getId() { return id; }
+    string getPW() { return passwd; }
     bool addPost();
     bool addReply(int pid);
     void addClub(int cid){
