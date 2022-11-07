@@ -1,11 +1,11 @@
 OBJS = client.o
-SRCS = $(OBJS:.o=.c)
+SRCS = $(OBJS:.o=.cpp)
 
 client: $(OBJS)
-	$(CC) -o $@ $(OBJS) -lpthread
+	g++ -o $@ $(OBJS) -lpthread
 
-.c.o:	$(SRCS)
-	$(CC)	-c $<
+.cpp.o:	$(SRCS)
+	g++	-c $<
 
 clean:
 	rm *.o client

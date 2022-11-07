@@ -4,7 +4,7 @@ using namespace std;
 
 class Operator : public Member {
 public:
-    Operator(string id) : Member(id) {}
+    Operator(string id, string passwd) : Member(id, passwd) {}
     virtual ~Operator() {}
     virtual bool delPost(int pid) { return true; } // 남이 쓴 포스트도 삭제 가능
     virtual bool delReply(int pid) { return true; }
