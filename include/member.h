@@ -13,7 +13,6 @@ protected:
     string passwd;
     string name;
     string phoneNo; 
-    vector<string> srchList;
     set<int> clubSet; // 가입한 모임id 리스트
 public:
     Member(){ 
@@ -44,6 +43,11 @@ public:
     bool unlike(int pid); // 포스트에 좋아요 해제
     virtual string type() { return "member"; } // member/manager/leader 반환
     set<int> getMyCid() { return clubSet; }
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(id, passwd, name, phoneNo); // serialize things by passing them to the archive
+    }
 };
 
 

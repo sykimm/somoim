@@ -210,7 +210,10 @@ void* reader_thread(void *arg){
 				cout << "잘못 선택했습니다\n";
 			}
 		}else{
-			printf("%s", buffer);
+			if (strcmp(buffer, "clear") == 0)
+				system("clear");
+			else
+				printf("%s", buffer);
 			fflush(stdout);
 		}
 		

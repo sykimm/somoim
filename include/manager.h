@@ -12,6 +12,8 @@
 #include "club.h"
 #include "post.h"
 #include "util.h"
+#include <cereal/types/vector.hpp> 
+// #include <cereal.hpp>
 using namespace std;
 
 
@@ -49,6 +51,16 @@ public:
     void showMyClubs(Member& m, int sd);
     void loadData(ifstream &fin);
     void saveData();
+    void showAllMember(){
+        for (Member* m : memArr){
+            cout << m->getName() << endl;
+        }
+    }
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(CEREAL_NVP(memArr)); // serialize things by passing them to the archive
+    }
 };
 
 

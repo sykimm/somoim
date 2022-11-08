@@ -21,17 +21,18 @@ public:
         this->memId = writer; 
     }
     ~Post(){};
-    void setTitle(string s) { this->title = s; }
+    void setTitle(string s) { this->title = s.substr(0, 80); }
     string getTitle() { return title; }
     string getWriter() { return memId; }
     string getContent() { return content; }
-    void setContent(string s) { this->content = s; }
+    void setContent(string s) { this->content = s.substr(0, 500); }
     void upload(); // time 설정
     void addReply(int sd){
         sendMsg(sd, ">> ");
-        char reply[2048];
+        char reply[80];
         recvMsg(sd, reply);
         replys.push_back(reply);
+        sendMsg(sd, "clear"); usleep(2000);
     }
     void showReplys(int sd){
         int i=0;

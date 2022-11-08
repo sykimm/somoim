@@ -20,6 +20,8 @@
 #include <iostream>
 #include <fstream>
 #include <dlfcn.h>
+#include <cereal/archives/binary.hpp>
+#include <sstream>
 using namespace std;
 
 #define BACKLOG 1024
@@ -44,6 +46,7 @@ void loginPage(int sd, Manager& mngr, Member& m){
 
 	while (1){
 		//메뉴를 출력한다.
+		sendMsg(sd, "clear"); usleep(2000);
 		sendMsg(sd, "---로그인페이지---\n");
 		sendMsg(sd, "[1] 전체모임\n");
 		sendMsg(sd, "[2] 모임검색\n");
@@ -63,20 +66,26 @@ void loginPage(int sd, Manager& mngr, Member& m){
 		//메뉴입력에 따라 분기 하여 해당 기능을 수행한다.
 		switch(menu){
 		case 1: // 전체모임
+			sendMsg(sd, "clear"); usleep(2000);
             mngr.showAllClubs(sd, m);
             break;
         case 2: // 모임검색
+			sendMsg(sd, "clear"); usleep(2000);
             mngr.searchClub();
             break;
         case 3: // 나의모임
+			sendMsg(sd, "clear"); usleep(2000);
             mngr.showMyClubs(m, sd);
             break;
         case 4: // 모임개설
+			sendMsg(sd, "clear"); usleep(2000);
             mngr.makeClub(sd, m);
             break;
         case 5: // 로그아웃
+			sendMsg(sd, "clear"); usleep(2000);
             return; // 메인페이지로 돌아감
 		default:
+			sendMsg(sd, "clear"); usleep(2000);
 			sendMsg(sd, "잘못 입력되었습니다");
 			break;
 		}
@@ -115,22 +124,29 @@ void mainPage(int sd, Manager& mngr){
 		case 1:
 			if (mngr.login(sd, m)){
 				cout << "main()에서 login해서 받아온 m의 id : " << m.getId() << endl;
+				sendMsg(sd, "clear"); usleep(2000);
 				sendMsg(sd, m.getName() + "님 안녕하세요!\n");
 				loginPage(sd, mngr, m);
 			}else{
+				sendMsg(sd, "clear"); usleep(2000);
 				sendMsg(sd, "ID 또는 비밀번호가 일치하지 않습니다.\n");
 			}
 			break;
 		case 2:
-			if (mngr.join(sd))
+			if (mngr.join(sd)){
+				sendMsg(sd, "clear"); usleep(2000);
 				sendMsg(sd, "회원가입 성공\n");
-			else
+			}else{
+				sendMsg(sd, "clear"); usleep(2000);
 				sendMsg(sd, "회원가입 실패\n");
+			}
+				
             break;
 		case 3:
 			mngr.saveData();
 			return;
 		default:
+			sendMsg(sd, "clear"); usleep(2000);
 			sendMsg(sd, "잘못 입력되었습니다");
 			break;
 		}
@@ -176,7 +192,6 @@ int main(){
         mngr.loadData(fin);
     }
 
-	
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{

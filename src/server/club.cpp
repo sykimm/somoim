@@ -38,6 +38,7 @@ void Club::addPost(int sd, string mid){
     p->setTitle(title);
     p->setContent(content);
     postArr.push_back(p);
+    sendMsg(sd, "clear"); usleep(2000);
     sendMsg(sd, ">> 게시글 등록이 완료되었습니다\n");
 }
 
@@ -94,8 +95,10 @@ void Club::postPage(int sd){
             p->addReply(sd);
             break;
         case 2: // 나가기
+            sendMsg(sd, "clear"); usleep(2000);
             return;
         default:
+            sendMsg(sd, "clear"); usleep(2000);
             sendMsg(sd, "잘못입력했습니다\n");
         }
     }
@@ -118,6 +121,7 @@ void Club::delPost(int sd, string mid){
     vector<Post*>::iterator it = postArr.begin()+pid-1;
     if ((*it)->getWriter() == mid){
         postArr.erase(postArr.begin()+pid-1);
+        sendMsg(sd, "clear"); usleep(2000);
         sendMsg(sd, "삭제되었습니다.\n");
     }else{
         sendMsg(sd, "작성자만 삭제가능합니다.\n");
@@ -141,6 +145,17 @@ void Club::searchPost(int sd){
     }
 
     showArrList(sd, srchPost);
+    // sendMsg(sd, "나가기(엔터)n");
+    // recvMsg(sd, buf);
+
+    while (1){
+        sendMsg(sd, "나가기(엔터)n");
+        recvMsg(sd, buf);
+        if (buf[0] == '\n'){}
+            break;
+    }
+    sendMsg(sd, "clear"); usleep(2000);
+
 }
 
 
@@ -166,21 +181,27 @@ void Club::boardPage(int sd, string mid){
         switch (menu)
         {
         case 1: // 글보기
+            sendMsg(sd, "clear"); usleep(2000);
             postPage(sd);
             break;
         case 2: // 글쓰기
+            sendMsg(sd, "clear"); usleep(2000);
             addPost(sd, mid);
             break;
         case 3: // 글삭제
+            sendMsg(sd, "clear"); usleep(2000);
             delPost(sd, mid);
             break;
         case 4: // 검색
+            sendMsg(sd, "clear"); usleep(2000);
             searchPost(sd);
             break;
         case 5: // 나가기
+            sendMsg(sd, "clear"); usleep(2000);
             return;
             break;
         default:
+            sendMsg(sd, "clear"); usleep(2000);
             sendMsg(sd, ">> 잘못입력했습니다\n");
             break;
         }

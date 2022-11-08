@@ -77,6 +77,7 @@ void Manager::clubPage(int sd, Club* clubPtr, Member& m){
     char buf[1024];
 
     while (1){
+        sendMsg(sd, "clear"); usleep(2000);
         sprintf(buf, "---%s 모임페이지(%d명)---\n", clubPtr->getName().c_str(), clubPtr->getTotalNo());
         sendMsg(sd, buf);
         sprintf(buf, "소개: %s\n", clubPtr->getDesc().c_str());
@@ -99,30 +100,37 @@ void Manager::clubPage(int sd, Club* clubPtr, Member& m){
         if (isMember){
             switch(menu){
             case 1:
+                sendMsg(sd, "clear"); usleep(2000);
                 clubPtr->boardPage(sd, m.getId());
                 break;
             case 2:
+                sendMsg(sd, "clear"); usleep(2000);
                 enterChat(cid, sd);
                 chatPage(cid, sd, m);
                 exitChat(cid, sd);
                 break;
             case 3:
-                cout << "자료실 기능 구현하기" << endl;
+                sendMsg(sd, "clear"); usleep(2000);
                 clubPtr->showArchive(sd);
                 break;
             case 4:
+                sendMsg(sd, "clear"); usleep(2000);
                 return;
             default:
+                sendMsg(sd, "clear"); usleep(2000);
                 sendMsg(sd, "잘못 선택하셨습니다.\n");
             }
         }else{
             switch(menu){
             case 1:
+                sendMsg(sd, "clear"); usleep(2000);
                 joinClub(clubPtr, m);
                 break;
             case 2:
+                sendMsg(sd, "clear"); usleep(2000);
                 return;
             default:
+                sendMsg(sd, "clear"); usleep(2000);
                 sendMsg(sd, "잘못 선택하셨습니다.\n");
             }
         }
