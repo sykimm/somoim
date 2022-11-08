@@ -183,7 +183,7 @@ void Club::boardPage(int sd, string mid){
 }
 
 void Club::download(int sd){
-    char buf[1024], fullname[2048], fbuf[BUFSIZE];
+    char fullname[2048], fbuf[BUFSIZE];
     DIR *dir;
     struct dirent *ent;
     int i;
@@ -194,30 +194,10 @@ void Club::download(int sd){
     int nsize, fpsize, fsize;
     
     while (1){
-        i = 0;
         sendMsg(sd, "다운로드 받을 파일번호 선택\n");
-        fileList.clear();
-        dir = opendir(archive);
-        if (dir != NULL) {
-            while (1) {
-                ent = readdir(dir);
-                if (ent == NULL){
-                    break;
-                }else{
-                    if (ent->d_type == DT_REG){
-                        sprintf(buf, "%2d] %s\n", ++i, ent->d_name);
-                        sendMsg(sd, buf);
-                        fileList.push_back(ent->d_name);
-                    }
-                }
-            }
-            sprintf(buf, "%2d] 나가기\n", ++i);
-            sendMsg(sd, buf);
-            closedir(dir);
-        }else{ /* could not open directory */
-            perror ("opendir");
+        if (!showfiles(archive, fileList, sd)){
+            break;
         }
-        
 
         recvMsg(sd, choice);
         if(choice[0]=='\n')
@@ -351,37 +331,67 @@ void Club::showArchive(int sd){
 
 void Club::delArchive(int sd){
     char buf[1024], fullname[2048], fbuf[BUFSIZE];
-    DIR *dir;
-    struct dirent *ent;
-    int i;
     char choice[2];
     int menu;
     vector<string> fileList;
-    FILE* file;
-    int nsize, fpsize, fsize;
     
     while (1){
-        i = 0;
-        sendMsg(sd, "삭제할 파일번호 선택\n");
-        fileList.clear();
-        dir = opendir(archive);
-        if (dir != NULL) {
-            while (1) {
-                ent = readdir(dir);
-                if (ent == NULL){
-                    break;
-                }else{
-                    if (ent->d_type == DT_REG){
-                        sprintf(buf, "%2d] %s\n", ++i, ent->d_name);
-                        sendMsg(sd, buf);
-                        fileList.push_back(ent->d_name);
-                    }
-                }
-            }
-            sprintf(buf, "%2d] 나가기\n", ++i);
-            sendMsg(sd, buf);
-            closedir(dir);
-        }else{ /* could not open directory */
-            perror ("opendir");
+        sendMsg(sd, ">> 삭제할 파일번호 선택\n");
+        if (!showfiles(archive, fileList, sd))
+            break;
+
+        recvMsg(sd, choice);
+        if(choice[0]=='\n')
+            continue;
+        menu = atoi(choice);
+
+        if (menu == fileList.size() + 1)
+            return;
+        else if (menu >= 1 && menu <= fileList.size()){
+            sprintf(fullname, "%s/%s", archive, fileList[menu-1].c_str());
+            remove(fullname);
+            sendMsg(sd, ">> 삭제가 완료되었습니다.\n");
         }
-        
+        else{
+            sendMsg(sd, "잘못 선택했습니다\n");
+        }
+    }
+}
+
+
+void Club::srchArchive(int sd){
+    char keyword[1024], buf[1024];
+    vector<string> fileList;
+    DIR *dir;
+    struct dirent *ent;
+    int i = 0;
+    size_t found;
+    string filename;
+
+    sendMsg(sd, "검색어>> ");
+    recvMsg(sd, keyword);
+    
+    
+	dir = opendir(archive);
+	if (dir == NULL){
+		perror ("opendir");
+		return;
+	}
+
+	while (1) {
+		ent = readdir(dir);
+		if (ent == NULL){
+			break;
+		}else{
+			if (ent->d_type == DT_REG){
+                filename = ent->d_name;
+                found = filename.find(keyword);
+                if (found != string::npos){
+                    sprintf(buf, "%2d] %s\n", ++i, ent->d_name);
+                    sendMsg(sd, buf);
+                }
+			}
+		}
+	}
+    closedir(dir);
+}

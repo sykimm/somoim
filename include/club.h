@@ -6,7 +6,7 @@
 #include "post.h"
 using namespace std;
 
-bool showfiles(const char* archive, vector<string> &fileList);
+
 
 class Club{
     int cid;
@@ -51,30 +51,3 @@ public:
 };
 
 
-
-bool showfiles(const char* archive, vector<string> &fileList){
-	DIR *dir;
-    struct dirent *ent;
-	int i = 0;
-
-	dir = opendir(archive);
-	if (dir == NULL){
-		perror ("opendir");
-		return false;
-	}
-
-	while (1) {
-		ent = readdir(dir);
-		if (ent == NULL){
-			break;
-		}else{
-			if (ent->d_type == DT_REG){
-				cout << ++i << "] " << ent->d_name << endl;
-				fileList.push_back(ent->d_name);
-			}
-		}
-	}
-	cout << ++i << "] 나가기" << endl;
-	closedir(dir);
-	return true;
-}

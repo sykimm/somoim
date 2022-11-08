@@ -140,7 +140,7 @@ void* reader_thread(void *arg){
 			fflush(stdout);
 			m = stoi(menu) - 1;
 			if (m == fileList.size()){
-				send(sock, menu, n, 0);
+				send(sock, "-1", strlen("-1"), 0);
 				usleep(2 * 1000);
 			}else if (m >= 0 && m < fileList.size()){
 				send(sock, fileList[m].c_str(), strlen(fileList[m].c_str()), 0);
@@ -167,7 +167,6 @@ void* reader_thread(void *arg){
 					fclose(fp);
 					cout << ">> 업로드를 완료했습니다."<< endl;
 				}
-
 			}else{
 				cout << "잘못 선택했습니다\n";
 			}
