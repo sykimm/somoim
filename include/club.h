@@ -40,7 +40,7 @@ public:
         return false;
     }
     void postPage(int sd);
-    void delPost(int sd);
+    void delPost(int sd, string mid);
     void searchPost(int sd);
     void boardPage(int sd, string mid);
     void showArchive(int sd);

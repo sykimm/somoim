@@ -14,15 +14,21 @@ using namespace std;
 
 bool Manager::join(int sd){ //회원가입
     int n;
-    char id[10], pw[10];
+    char id[10], pw[10], name[10], phoneNo[20];
 
-    sendMsg(sd, "ID 입력>>");
+    sendMsg(sd, "1) ID 입력>>");
     recvMsg(sd, id);
 
-    sendMsg(sd, "PW 입력>>");
+    sendMsg(sd, "2) PW 입력>>");
     recvMsg(sd, pw);
 
-    Member* m = new Member(id, pw);
+    sendMsg(sd, "3) 이름 입력>>");
+    recvMsg(sd, name);
+
+    sendMsg(sd, "4) 전화번호 입력>>");
+    recvMsg(sd, phoneNo);
+
+    Member* m = new Member(id, pw, name, phoneNo);
     memArr.push_back(m);
 
     return true;
@@ -292,3 +298,36 @@ void Manager::showMyClubs(Member& m, int sd){
         sendMsg(sd, buf);
     }
 }
+
+
+void Manager::loadData(ifstream& fin){
+    string line;
+	vector<string> v;
+    
+    
+    while(getline(fin, line)){		
+        v = parseLine(line);
+        memArr.push_back(new Member(v[0], v[1], v[2], v[3]));
+    }
+    
+}
+
+
+void Manager::saveData(){
+    FILE *fp;
+
+    fp = fopen("userinfo.txt", "w");
+
+    for(Member* m: memArr){
+        fputs(m->getId().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getPW().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getName().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getphoneNo().c_str(), fp);
+        fputs("\n", fp);
+    }
+    fclose(fp);
+}
+

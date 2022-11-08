@@ -16,14 +16,23 @@ protected:
     vector<string> srchList;
     set<int> clubSet; // 가입한 모임id 리스트
 public:
-    Member(){ }
-    Member(string id, string pw){
+    Member(){ 
+        this->id = "";
+        this->passwd = "";
+        this->name = "";
+        this->phoneNo = "";
+    }
+    Member(string id, string pw, string name, string phoneNo){
         this->id = id;
         this->passwd = pw;
+        this->name = name;
+        this->phoneNo = phoneNo;
     }
     virtual ~Member() {}
     string getId() { return id; }
     string getPW() { return passwd; }
+    string getName() { return name; }
+    string getphoneNo() { return phoneNo; }
     bool addPost();
     bool addReply(int pid);
     void addClub(int cid){

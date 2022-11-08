@@ -46,3 +46,26 @@ bool showfiles(const char* archive, vector<string> &fileList, int sd){
 	closedir(dir);
 	return true;
 }
+
+
+
+vector<string> parseLine(string line){
+	int idx = -1;
+	int start = 0;
+	int n;
+	vector<string> v;
+	while(true){
+		idx = line.find(",", start);
+		if (idx == -1){
+			// 없음
+			v.push_back(line.substr(start));
+			break;
+		}else{
+			// 있음
+			n = idx - start;
+			v.push_back(line.substr(start, n));
+			start = idx+1;
+		}
+	}
+	return v;
+}

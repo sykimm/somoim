@@ -102,7 +102,7 @@ void Club::postPage(int sd){
     
 }
 
-void Club::delPost(int sd){
+void Club::delPost(int sd, string mid){
     char choice[2];
 
     while (1){
@@ -114,9 +114,14 @@ void Club::delPost(int sd){
             break;
     }
     int pid = atoi(choice);
-    postArr.erase(postArr.begin()+pid-1);
-
-    sendMsg(sd, "삭제되었습니다.\n");
+    
+    vector<Post*>::iterator it = postArr.begin()+pid-1;
+    if ((*it)->getWriter() == mid){
+        postArr.erase(postArr.begin()+pid-1);
+        sendMsg(sd, "삭제되었습니다.\n");
+    }else{
+        sendMsg(sd, "작성자만 삭제가능합니다.\n");
+    }
 }
 
 void Club::searchPost(int sd){
@@ -167,7 +172,7 @@ void Club::boardPage(int sd, string mid){
             addPost(sd, mid);
             break;
         case 3: // 글삭제
-            delPost(sd);
+            delPost(sd, mid);
             break;
         case 4: // 검색
             searchPost(sd);

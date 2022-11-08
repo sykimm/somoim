@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fstream>
 #include "leader.h"
 #include "club.h"
 #include "post.h"
@@ -46,6 +47,8 @@ public:
     void enterChat(int cid, int sd);
     void exitChat(int cid, int sd);
     void showMyClubs(Member& m, int sd);
+    void loadData(ifstream &fin);
+    void saveData();
 };
 
 
