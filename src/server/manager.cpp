@@ -28,87 +28,50 @@ bool Manager::join(int sd){ //회원가입
     return true;
 }
 
-ssize_t getpasswd (char **pw, size_t sz, int mask, FILE *fp)
+char hideAndGet(){
+    struct termios oldt, newt;
+    char ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt); //에코끈상태로
+    ch = getchar(); // 글받고
+    cout << ch << endl;
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 원복
+    return ch;
+}
+
+string getpasswd(int sd)
 {
-    if (!pw || !sz || !fp) return -1;       /* validate input   */
-#ifdef MAXPW
-    if (sz > MAXPW) sz = MAXPW;
-#endif
+    string passwd = "";
+    char c;
 
-    if (*pw == NULL) {              /* reallocate if no address */
-        void *tmp = realloc (*pw, sz * sizeof **pw);
-        if (!tmp)
-            return -1;
-        memset (tmp, 0, sz);    /* initialize memory to 0   */
-        *pw =  (char*) tmp;
-    }
-
-    size_t idx = 0;         /* index, number of chars in read   */
-    int c = 0;
-
-    struct termios old_kbd_mode;    /* orig keyboard settings   */
-    struct termios new_kbd_mode;
-
-    if (tcgetattr (0, &old_kbd_mode)) { /* save orig settings   */
-        fprintf (stderr, "%s() error: tcgetattr failed.\n", __func__);
-        return -1;
-    }   /* copy old to new */
-    memcpy (&new_kbd_mode, &old_kbd_mode, sizeof(struct termios));
-
-    new_kbd_mode.c_lflag &= ~(ICANON | ECHO);  /* new kbd flags */
-    new_kbd_mode.c_cc[VTIME] = 0;
-    new_kbd_mode.c_cc[VMIN] = 1;
-    if (tcsetattr (0, TCSANOW, &new_kbd_mode)) {
-        fprintf (stderr, "%s() error: tcsetattr failed.\n", __func__);
-        return -1;
-    }
-
-    /* read chars from fp, mask if valid char specified */
-    while (((c = fgetc (fp)) != '\n' && c != EOF && idx < sz - 1) ||
-            (idx == sz - 1 && c == 127))
-    {
-        if (c != 127) {
-            if (31 < mask && mask < 127)    /* valid ascii char */
-                fputc (mask, stdout);
-            (*pw)[idx++] = c;
+    while (1){
+        c = hideAndGet();
+        sendMsg(sd, "*");
+        if (c == '\n'){
+            sendMsg(sd, "\n");
+            break;
         }
-        else if (idx > 0) {         /* handle backspace (del)   */
-            if (31 < mask && mask < 127) {
-                fputc (0x8, stdout);
-                fputc (' ', stdout);
-                fputc (0x8, stdout);
-            }
-            (*pw)[--idx] = 0;
-        }
+        passwd += c;
     }
-    (*pw)[idx] = 0; /* null-terminate   */
+    return passwd;
 
-    /* reset original keyboard  */
-    if (tcsetattr (0, TCSANOW, &old_kbd_mode)) {
-        fprintf (stderr, "%s() error: tcsetattr failed.\n", __func__);
-        return -1;
-    }
-
-    if (idx == sz - 1 && c != '\n') /* warn if pw truncated */
-        fprintf (stderr, " (%s() warning: truncated at %zu chars.)\n",
-                __func__, sz - 1);
-
-    return idx; /* number of chars in passwd    */
 }
 
 bool Manager::login(int sd, Member& m){
     int n;
-    char id[10], password[10], c;
-    char* p = password;
+    char id[10], c;
+    string password;
 
     sendMsg(sd, "ID 입력>>");
     recvMsg(sd, id);
 
     sendMsg(sd, "비번 입력>>");
-    // getpasswd(&p, 10, '*', stdin);
+    // password = getpasswd(sd);
     
     for(Member* mptr: memArr){
-        if (mptr->getId() == id){ // && mptr->getPW() == password
+        if (mptr->getId() == id){ //  && mptr->getPW() == password
             m = *mptr;
             return true;
         }
@@ -285,6 +248,7 @@ void Manager::makeClub(int sd, Member& l){
     sendMsg(sd, "모임 개설을 시작합니다\n");
     sendMsg(sd, "1. 모임 이름 >>");
     recvMsg(sd, name);
+    cout << name << endl;
     c->setName(name);
     sendMsg(sd, "2. 모임 설명글 >>");
     recvMsg(sd, desc);
