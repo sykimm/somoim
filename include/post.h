@@ -21,7 +21,10 @@ public:
         this->memId = writer; 
     }
     ~Post(){};
-    void setTitle(string s) { this->title = s; }
+    void setTitle(string s) { 
+        
+        this->title = s; 
+    }
     string getTitle() { return title; }
     string getWriter() { return memId; }
     string getContent() { return content; }

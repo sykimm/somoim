@@ -28,35 +28,16 @@ bool Manager::join(int sd){ //회원가입
     return true;
 }
 
-char hideAndGet(){
-    struct termios oldt, newt;
-    char ch;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt); //에코끈상태로
-    ch = getchar(); // 글받고
-    cout << ch << endl;
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 원복
-    return ch;
-}
 
 string getpasswd(int sd)
-{
-    string passwd = "";
-    char c;
-
-    while (1){
-        c = hideAndGet();
-        sendMsg(sd, "*");
-        if (c == '\n'){
-            sendMsg(sd, "\n");
-            break;
-        }
-        passwd += c;
-    }
+{   
+    sendMsg(sd, "pw");
+    usleep(2 * 1000);
+    char passwd[20];
+    // char c[1];
+    
+    recvMsg(sd, passwd);
     return passwd;
-
 }
 
 bool Manager::login(int sd, Member& m){
@@ -68,10 +49,11 @@ bool Manager::login(int sd, Member& m){
     recvMsg(sd, id);
 
     sendMsg(sd, "비번 입력>>");
-    // password = getpasswd(sd);
+    usleep(2 * 1000);
+    password = getpasswd(sd);
     
     for(Member* mptr: memArr){
-        if (mptr->getId() == id){ //  && mptr->getPW() == password
+        if (mptr->getId() == id && mptr->getPW() == password){ //  
             m = *mptr;
             return true;
         }

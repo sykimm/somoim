@@ -132,6 +132,7 @@ void mainPage(int sd, Manager& mngr){
 			break;
 		}
     }
+	// system("clear");
 }
 
 

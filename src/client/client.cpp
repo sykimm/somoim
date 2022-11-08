@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <vector>
+#include <termios.h>
 #include "macro.h"
 
 using namespace std;
@@ -28,7 +29,17 @@ using namespace std;
 void* writer_thread(void *arg);
 void* reader_thread(void *arg);
 bool showfiles(const char* archive, vector<string> &fileList);
+
 pthread_t tid1, tid2;
+bool flag = false;
+struct termios oldt, newt;
+
+
+class ARGS{
+public:
+	int *fd;
+	
+};
 
 int main(int argc, char *argv[])
 {
@@ -36,12 +47,14 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serv_addr;
 	int sin_size;
 	char cwd[512], archive[1024];
+	
 
 	if(argc!=2){
 		fprintf(stderr, "Usage : ./client IP_ADDRESS\n");
 		return 1;
 	}
 
+	
 	getcwd(cwd, sizeof(cwd)); // client 현재 경로
 	sprintf(archive, "%s/download", cwd); // 다운받을 경로
 	mkdir(archive, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -63,11 +76,14 @@ int main(int argc, char *argv[])
 	}
 
 	system("clear");
+	ARGS *params = new ARGS();
+	params->fd = &sockfd;
+	
 
-	if(pthread_create(&tid1, NULL, writer_thread, &sockfd) != 0){
+	if(pthread_create(&tid1, NULL, writer_thread, params) != 0){
 		perror("pthread_create");
 	}
-	if(pthread_create(&tid2, NULL, reader_thread, &sockfd) != 0){
+	if(pthread_create(&tid2, NULL, reader_thread, params) != 0){
 		perror("pthread_create");
 	}
 
@@ -78,8 +94,13 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+
+
 void* reader_thread(void *arg){
-	int sock = *((int*)arg);
+	// int sock = *((int*)arg);
+	ARGS* params = (ARGS*) arg;
+	int sock = *(params->fd);
+
 	char cwd[512], archive[1024];
 	FILE *fp;
 	int pid;
@@ -90,6 +111,8 @@ void* reader_thread(void *arg){
 	vector<string> fileList;
 	char menu[512];
 	int m;
+	
+	char ch;
 
 
 	getcwd(cwd, sizeof(cwd)); // client 현재 경로
@@ -102,8 +125,22 @@ void* reader_thread(void *arg){
 			break;
 		}
 		buffer[n] = '\0';
-
-		if (strcmp(buffer, "TrAnSfEr") == 0){ // copy 하는 경우
+		
+		if (flag == false){
+			if (strcmp(buffer, "pw") == 0){
+				flag = true;
+				fflush(stdout);
+				
+				tcgetattr(STDIN_FILENO, &oldt);
+				newt = oldt;
+				newt.c_lflag &= ~(ICANON | ECHO);
+				tcsetattr(STDIN_FILENO, TCSANOW, &newt); //에코끈상태로
+				continue;
+			}
+		}
+		
+		if (strcmp(buffer, "TrAnSfEr") == 0)
+		{ // copy 하는 경우
 			fflush(stdout);
 			// 1. 파일명 받기
 			n = recv(sock, filename, 512, 0);
@@ -127,7 +164,9 @@ void* reader_thread(void *arg){
 			}
 			fclose(fp);
 			cout << ">> 다운로드가 완료되었습니다." << endl;
-		}else if (strcmp(buffer, "uploaddd") == 0){
+		}
+		else if (strcmp(buffer, "uploaddd") == 0)
+		{
 			fflush(stdout);
 			fileList.clear();
 			sprintf(archive, "%s/download", cwd); // 내폴더
@@ -181,18 +220,40 @@ void* reader_thread(void *arg){
 }
 
 void* writer_thread(void *arg){
-	int sock = *((int*)arg);
+	ARGS* params = (ARGS*) arg;
+	int sock = *(params->fd);
+	
 
 	int n;
 	char buffer[1024];
-	
+	char c, i;
+
 	while(1){
-		fgets(buffer, 1024, stdin);
-		n = strlen(buffer);
-		buffer[n-1] = '\0';
+		i = 0;
+		
+		while (1){
+			buffer[i] = getchar();
+			if (buffer[i] == '\n' || buffer[i] == '\r'){
+				buffer[i] = '\0';
+				if (flag){
+					cout << "\n";
+					tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 원복
+					flag = false;
+				}
+				break;
+			}
+
+			if (flag){
+				cout << "*";
+			}
+			i++;
+		}
+		
 		if(!strcmp(buffer, "/q"))
 			break;
-		send(sock, buffer, n, 0);
+		send(sock, buffer, i, 0);
+		i = 0;
+		
 	}
 	pthread_cancel(tid2);
 	pthread_exit(NULL);	
@@ -225,3 +286,5 @@ bool showfiles(const char* archive, vector<string> &fileList){
 	closedir(dir);
 	return true;
 }
+
+
