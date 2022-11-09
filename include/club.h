@@ -6,8 +6,11 @@
 #include "post.h"
 using namespace std;
 
+
+
 class Club{
     int cid;
+    char archive[1024]; // 서버에 있는 이 모임에 대한 db 위치
     string clubName;
     string description;
     vector<Post*> postArr;
@@ -37,10 +40,14 @@ public:
         return false;
     }
     void postPage(int sd);
-    void delPost(int sd);
+    void delPost(int sd, string mid);
     void searchPost(int sd);
     void boardPage(int sd, string mid);
     void showArchive(int sd);
     void download(int sd);
-    void upload(int sd) {};
+    void upload(int sd);
+    void delArchive(int sd);
+    void srchArchive(int sd);
 };
+
+

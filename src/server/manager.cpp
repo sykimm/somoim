@@ -14,101 +14,52 @@ using namespace std;
 
 bool Manager::join(int sd){ //회원가입
     int n;
-    char id[10], pw[10];
+    char id[10], pw[10], name[10], phoneNo[20];
 
-    sendMsg(sd, "ID 입력>>");
+    sendMsg(sd, "1) ID 입력>>");
     recvMsg(sd, id);
 
-    sendMsg(sd, "PW 입력>>");
+    sendMsg(sd, "2) PW 입력>>");
     recvMsg(sd, pw);
 
-    Member* m = new Member(id, pw);
+    sendMsg(sd, "3) 이름 입력>>");
+    recvMsg(sd, name);
+
+    sendMsg(sd, "4) 전화번호 입력>>");
+    recvMsg(sd, phoneNo);
+
+    Member* m = new Member(id, pw, name, phoneNo);
     memArr.push_back(m);
 
     return true;
 }
 
-ssize_t getpasswd (char **pw, size_t sz, int mask, FILE *fp)
-{
-    if (!pw || !sz || !fp) return -1;       /* validate input   */
-#ifdef MAXPW
-    if (sz > MAXPW) sz = MAXPW;
-#endif
 
-    if (*pw == NULL) {              /* reallocate if no address */
-        void *tmp = realloc (*pw, sz * sizeof **pw);
-        if (!tmp)
-            return -1;
-        memset (tmp, 0, sz);    /* initialize memory to 0   */
-        *pw =  (char*) tmp;
-    }
-
-    size_t idx = 0;         /* index, number of chars in read   */
-    int c = 0;
-
-    struct termios old_kbd_mode;    /* orig keyboard settings   */
-    struct termios new_kbd_mode;
-
-    if (tcgetattr (0, &old_kbd_mode)) { /* save orig settings   */
-        fprintf (stderr, "%s() error: tcgetattr failed.\n", __func__);
-        return -1;
-    }   /* copy old to new */
-    memcpy (&new_kbd_mode, &old_kbd_mode, sizeof(struct termios));
-
-    new_kbd_mode.c_lflag &= ~(ICANON | ECHO);  /* new kbd flags */
-    new_kbd_mode.c_cc[VTIME] = 0;
-    new_kbd_mode.c_cc[VMIN] = 1;
-    if (tcsetattr (0, TCSANOW, &new_kbd_mode)) {
-        fprintf (stderr, "%s() error: tcsetattr failed.\n", __func__);
-        return -1;
-    }
-
-    /* read chars from fp, mask if valid char specified */
-    while (((c = fgetc (fp)) != '\n' && c != EOF && idx < sz - 1) ||
-            (idx == sz - 1 && c == 127))
-    {
-        if (c != 127) {
-            if (31 < mask && mask < 127)    /* valid ascii char */
-                fputc (mask, stdout);
-            (*pw)[idx++] = c;
-        }
-        else if (idx > 0) {         /* handle backspace (del)   */
-            if (31 < mask && mask < 127) {
-                fputc (0x8, stdout);
-                fputc (' ', stdout);
-                fputc (0x8, stdout);
-            }
-            (*pw)[--idx] = 0;
-        }
-    }
-    (*pw)[idx] = 0; /* null-terminate   */
-
-    /* reset original keyboard  */
-    if (tcsetattr (0, TCSANOW, &old_kbd_mode)) {
-        fprintf (stderr, "%s() error: tcsetattr failed.\n", __func__);
-        return -1;
-    }
-
-    if (idx == sz - 1 && c != '\n') /* warn if pw truncated */
-        fprintf (stderr, " (%s() warning: truncated at %zu chars.)\n",
-                __func__, sz - 1);
-
-    return idx; /* number of chars in passwd    */
+string getpasswd(int sd)
+{   
+    sendMsg(sd, "pw");
+    usleep(2 * 1000);
+    char passwd[20];
+    // char c[1];
+    
+    recvMsg(sd, passwd);
+    return passwd;
 }
 
 bool Manager::login(int sd, Member& m){
     int n;
-    char id[10], password[10], c;
-    char* p = password;
+    char id[10], c;
+    string password;
 
     sendMsg(sd, "ID 입력>>");
     recvMsg(sd, id);
 
     sendMsg(sd, "비번 입력>>");
-    // getpasswd(&p, 10, '*', stdin);
+    usleep(2 * 1000);
+    password = getpasswd(sd);
     
     for(Member* mptr: memArr){
-        if (mptr->getId() == id){ // && mptr->getPW() == password
+        if (mptr->getId() == id && mptr->getPW() == password){ //  
             m = *mptr;
             return true;
         }
@@ -126,6 +77,7 @@ void Manager::clubPage(int sd, Club* clubPtr, Member& m){
     char buf[1024];
 
     while (1){
+        sendMsg(sd, "clear"); usleep(2000);
         sprintf(buf, "---%s 모임페이지(%d명)---\n", clubPtr->getName().c_str(), clubPtr->getTotalNo());
         sendMsg(sd, buf);
         sprintf(buf, "소개: %s\n", clubPtr->getDesc().c_str());
@@ -148,30 +100,37 @@ void Manager::clubPage(int sd, Club* clubPtr, Member& m){
         if (isMember){
             switch(menu){
             case 1:
+                sendMsg(sd, "clear"); usleep(2000);
                 clubPtr->boardPage(sd, m.getId());
                 break;
             case 2:
+                sendMsg(sd, "clear"); usleep(2000);
                 enterChat(cid, sd);
                 chatPage(cid, sd, m);
                 exitChat(cid, sd);
                 break;
             case 3:
-                cout << "자료실 기능 구현하기" << endl;
+                sendMsg(sd, "clear"); usleep(2000);
                 clubPtr->showArchive(sd);
                 break;
             case 4:
+                sendMsg(sd, "clear"); usleep(2000);
                 return;
             default:
+                sendMsg(sd, "clear"); usleep(2000);
                 sendMsg(sd, "잘못 선택하셨습니다.\n");
             }
         }else{
             switch(menu){
             case 1:
+                sendMsg(sd, "clear"); usleep(2000);
                 joinClub(clubPtr, m);
                 break;
             case 2:
+                sendMsg(sd, "clear"); usleep(2000);
                 return;
             default:
+                sendMsg(sd, "clear"); usleep(2000);
                 sendMsg(sd, "잘못 선택하셨습니다.\n");
             }
         }
@@ -285,6 +244,7 @@ void Manager::makeClub(int sd, Member& l){
     sendMsg(sd, "모임 개설을 시작합니다\n");
     sendMsg(sd, "1. 모임 이름 >>");
     recvMsg(sd, name);
+    cout << name << endl;
     c->setName(name);
     sendMsg(sd, "2. 모임 설명글 >>");
     recvMsg(sd, desc);
@@ -346,3 +306,36 @@ void Manager::showMyClubs(Member& m, int sd){
         sendMsg(sd, buf);
     }
 }
+
+
+void Manager::loadData(ifstream& fin){
+    string line;
+	vector<string> v;
+    
+    
+    while(getline(fin, line)){		
+        v = parseLine(line);
+        memArr.push_back(new Member(v[0], v[1], v[2], v[3]));
+    }
+    
+}
+
+
+void Manager::saveData(){
+    FILE *fp;
+
+    fp = fopen("userinfo.txt", "w");
+
+    for(Member* m: memArr){
+        fputs(m->getId().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getPW().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getName().c_str(), fp);
+        fputs(",", fp);
+        fputs(m->getphoneNo().c_str(), fp);
+        fputs("\n", fp);
+    }
+    fclose(fp);
+}
+
