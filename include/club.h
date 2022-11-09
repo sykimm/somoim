@@ -6,7 +6,7 @@
 #include "post.h"
 using namespace std;
 
-
+void showPost(int sd, Post* p);
 
 class Club{
     int cid;
@@ -16,18 +16,18 @@ class Club{
     vector<Post*> postArr;
     vector<Member*> memArr;
     // vector<Member*> archive;
-    void showArrList(int sd, vector<Post*> arr);
+    void showArrList(int sd, vector<Post*> &arr, string mid);
 public:
     static int n;
     static void setN() { n = 0; }
-    Club();
+    Club(int cid=-1);
     int getId(){ return cid; }
     string getName(){ return clubName; }
     string getDesc(){ return description; }
     void setName(string s){ clubName = s; }
     void setDesc(string s){ description = s; }
     void addPost(int sd, string mid);
-    void showPostList(int sd);
+    // void showPostList(int sd);
     void addMember(Member* m){
         memArr.push_back(m);
     }
@@ -39,9 +39,9 @@ public:
         }
         return false;
     }
-    void postPage(int sd);
-    void delPost(int sd, string mid);
-    void searchPost(int sd);
+    // void postPage(int sd);s
+    void delPost(int sd, vector<Post*>::iterator it, string mid);
+    void searchPost(int sd, string mid);
     void boardPage(int sd, string mid);
     void showArchive(int sd);
     void download(int sd);

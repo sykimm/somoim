@@ -148,6 +148,7 @@ void* reader_thread(void *arg){
 
 			// 2. client의 download 경로 파악 및 파일 오픈 : archive
 			sprintf(archive, "%s/download/%s", cwd, filename); // 다운받을 경로
+			system("clear");
 			printf(">> 다운로드 경로 : %s\n", archive);
 			fp = fopen(archive, "wb");
 			if (fp == NULL)
@@ -159,10 +160,11 @@ void* reader_thread(void *arg){
 			n = BUFSIZE;
 			while (n >= BUFSIZE){
 				n = recv(sock, fbuf, BUFSIZE, 0); // 서버에서 받은거 fbuf에 받아두고
-				cout << ">> 수신 중: [" << n << "B/" << filesize << "B]" << endl;
+				// cout << ">> 수신 중: [" << n << "B/" << filesize << "B]" << endl;
 				fwrite(fbuf, sizeof(char), n, fp); // fbuf내용을 fp에 적어줌
 			}
 			fclose(fp);
+			system("clear");
 			cout << ">> 다운로드가 완료되었습니다." << endl;
 		}
 		else if (strcmp(buffer, "uploaddd") == 0)
@@ -175,7 +177,6 @@ void* reader_thread(void *arg){
 			// 2. 선택한 파일명 보내기
 			n = recv(sock, menu, 2, 0);
 			menu[n] = '\0';
-			cout << "menu" << menu << endl;
 			fflush(stdout);
 			m = stoi(menu) - 1;
 			if (m == fileList.size()){
@@ -183,14 +184,14 @@ void* reader_thread(void *arg){
 				usleep(2 * 1000);
 			}else if (m >= 0 && m < fileList.size()){
 				send(sock, fileList[m].c_str(), strlen(fileList[m].c_str()), 0);
-				cout << fileList[m].c_str() << "을 업로드합니다." << endl;
+				// cout << fileList[m].c_str() << "을 업로드합니다." << endl;
 				usleep(2 * 1000);
 				sprintf(fullname, "%s/%s", archive, fileList[m].c_str());
 				fp = fopen(fullname, "rb"); // binary로 open
 				if (fp != NULL){
 					fseek(fp, 0, SEEK_END); //파일포인터 끝으로 이동해서
 					int fsize = ftell(fp); // 파일 크기 계산
-					cout << "filesize: " << fsize << endl;
+					// cout << "filesize: " << fsize << endl;
 					fseek(fp, 0, SEEK_SET); // 파일포인터 처음으로 이동
 					send(sock, &fsize, sizeof(fsize), 0); // 파일크기 전송
 					usleep(2 * 1000);
@@ -204,6 +205,7 @@ void* reader_thread(void *arg){
 						// sendMsg(sd, tmp);
 					}
 					fclose(fp);
+					system("clear");
 					cout << ">> 업로드를 완료했습니다."<< endl;
 				}
 			}else{

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <filesystem>
 #include <dirent.h>
@@ -10,19 +11,24 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <fstream>
+#include <cmath>
 using namespace std;
 #include "club.h"
 
 #define BUFSIZE 256
 
 
-Club::Club(){ 
+Club::Club(int cid){ 
     char cwd[512];
     int status;
-    cid = n++; 
+    if (cid == -1){
+        this->cid = n++; 
+    }else{
+        this->cid = cid;
+    }
     
     getcwd(cwd, sizeof(cwd));
-    sprintf(archive, "%s/database/%s", cwd, to_string(cid).c_str());
+    sprintf(archive, "%s/database/%s", cwd, to_string(this->cid).c_str());
     status = mkdir(archive, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     cout << "club archive 생성" << endl;
 }
@@ -38,36 +44,95 @@ void Club::addPost(int sd, string mid){
     p->setTitle(title);
     p->setContent(content);
     postArr.push_back(p);
-    sendMsg(sd, "clear"); usleep(2000);
+    sendMsg(sd, "clear");
     sendMsg(sd, ">> 게시글 등록이 완료되었습니다\n");
 }
 
+void Club::showArrList(int sd, vector<Post*> &arr, string mid){
+    int page = 0;
+    int idx, no;
+    char buf[200], buf2[10];
+    vector<Post*>::iterator it = arr.begin();
+    int npage;
+    
+    while(1){
+        npage = ceil(arr.size() / 10.);
+        sendMsg(sd, "------게시판 목록------\n");
+        for (int j=0; j<10; j++){
+            idx = page * 10 + j;
+            cout << "idx: " << idx << endl;
+            if (idx >= arr.size())
+                break;
+            // sprintf(buf, "%d>> %s\n", idx+1, (*(it+idx))->getTitle().c_str());
+            sprintf(buf, "%d>> %s\n", idx+1, arr[idx]->getTitle().c_str());
+            // cout << (*(it+idx))->getTitle() << endl;
+            sendMsg(sd, buf);
+        }
+        sendMsg(sd, "-----------------------\n");
+        sendMsg(sd, "[1] 이전페이지\n");
+        sendMsg(sd, "[2] 다음페이지\n");
+        sendMsg(sd, "[3] 글보기\n");
+        sendMsg(sd, "[4] 글쓰기\n");
+        sendMsg(sd, "[5] 글삭제\n");
+        sendMsg(sd, "[6] 제목검색\n");
+        sendMsg(sd, "[7] 나가기\n");
+        recvMsg(sd, buf);
+        if (strcmp(buf, "1") == 0){
+            if (page == 0){
+                sendMsg(sd, "clear");
+                sendMsg(sd, "첫번째 페이지입니다.\n");
+            }
+            else{
+                page--;
+                sendMsg(sd, "clear");
+            }
+        }else if (strcmp(buf, "2") == 0){
+            if (page == npage-1){
+                sendMsg(sd, "clear");
+                sendMsg(sd, "마지막 페이지입니다.\n");
+            }else{
+                page++;
+                sendMsg(sd, "clear");
+            }
+        }else if (strcmp(buf, "3") == 0){ // 글보기
+            sendMsg(sd, ">> 번호 입력\n");
+            recvMsg(sd, buf2);
+            no = stoi(buf2) - 1;
+            sendMsg(sd, "clear");
+            showPost(sd, arr[no]);
+        }else if (strcmp(buf, "4") == 0){ // 글쓰기
+            sendMsg(sd, "clear");
+            addPost(sd, mid);
+        }
+        else if (strcmp(buf, "5") == 0){ // 글삭제
+            sendMsg(sd, ">> 삭제할 글번호 입력\n");
+            recvMsg(sd, buf2);
+            no = stoi(buf2) - 1;
+            sendMsg(sd, "clear");
+            delPost(sd, arr.begin()+no, mid);
+        }else if (strcmp(buf, "6") == 0){ // 제목검색
+            sendMsg(sd, "clear");
+            searchPost(sd, mid);
+        }
+        else if (strcmp(buf, "7") == 0){ //나가기
+            sendMsg(sd, "clear");
+            break;
+        }
+        else{
+            sendMsg(sd, "clear");
+            sendMsg(sd, "잘못 선택함\n");
+            continue;
+        }
 
-void Club::showPostList(int sd){
-    showArrList(sd, postArr);
-}
-
-void Club::showArrList(int sd, vector<Post*> arr){
-    int i = 0;
-    char buf[200];
-    sendMsg(sd, "------게시판 목록------\n");
-    for (Post* p: arr){
-        sprintf(buf, "%d>> %s\n", ++i, p->getTitle().c_str());
-        sendMsg(sd, buf);
     }
-    sendMsg(sd, "-----------------------\n");
 }
 
-void Club::postPage(int sd){
+
+void showPost(int sd, Post* p){
     char buf[2048];
     char choice[2];
     int menu;
-
-    sendMsg(sd, "글번호 선택>> ");
-    recvMsg(sd, buf);
-    int n = atoi(buf);
     
-    Post* p = postArr[n-1];
     while(1){
         sendMsg(sd, "----------게시글-----------\n");
         sprintf(buf, "(1) 제목>> %s\n(2) 작성자>> %s\n(3) 내용>> %s\n", 
@@ -95,40 +160,25 @@ void Club::postPage(int sd){
             p->addReply(sd);
             break;
         case 2: // 나가기
-            sendMsg(sd, "clear"); usleep(2000);
+            sendMsg(sd, "clear");
             return;
         default:
-            sendMsg(sd, "clear"); usleep(2000);
+            sendMsg(sd, "clear");
             sendMsg(sd, "잘못입력했습니다\n");
         }
     }
-    
 }
 
-void Club::delPost(int sd, string mid){
-    char choice[2];
-
-    while (1){
-        sendMsg(sd, "삭제할 글 번호>> ");
-        recvMsg(sd, choice);
-        if(choice[0]=='\n')
-            continue;
-        else
-            break;
-    }
-    int pid = atoi(choice);
-    
-    vector<Post*>::iterator it = postArr.begin()+pid-1;
+void Club::delPost(int sd, vector<Post*>::iterator it, string mid){
     if ((*it)->getWriter() == mid){
-        postArr.erase(postArr.begin()+pid-1);
-        sendMsg(sd, "clear"); usleep(2000);
+        postArr.erase(it-1);
         sendMsg(sd, "삭제되었습니다.\n");
     }else{
         sendMsg(sd, "작성자만 삭제가능합니다.\n");
     }
 }
 
-void Club::searchPost(int sd){
+void Club::searchPost(int sd, string mid){
     char buf[1024];
     size_t found;
     vector<Post*> srchPost;
@@ -136,7 +186,6 @@ void Club::searchPost(int sd){
     sendMsg(sd, "검색어>> ");
     recvMsg(sd, buf);
     
-
     for(Post* p: postArr){
         found = p->getTitle().find(buf);
         if (found != string::npos){
@@ -144,68 +193,68 @@ void Club::searchPost(int sd){
         }
     }
 
-    showArrList(sd, srchPost);
-    // sendMsg(sd, "나가기(엔터)n");
-    // recvMsg(sd, buf);
-
-    while (1){
-        sendMsg(sd, "나가기(엔터)n");
+    // showArrList(sd, srchPost, mid);
+    int page = 0;
+    int idx, no;
+    char buf2[10];
+    vector<Post*>::iterator it = srchPost.begin();
+    int npage;
+    
+    while(1){
+        npage = ceil(srchPost.size() / 10.);
+        sendMsg(sd, "------검색된 게시판 목록------\n");
+        for (int j=0; j<10; j++){
+            idx = page * 10 + j;
+            cout << "idx: " << idx << endl;
+            if (idx >= srchPost.size())
+                break;
+            sprintf(buf, "%d>> %s\n", idx+1, srchPost[idx]->getTitle().c_str());
+            sendMsg(sd, buf);
+        }
+        sendMsg(sd, "-----------------------\n");
+        sendMsg(sd, "[1] 이전페이지\n");
+        sendMsg(sd, "[2] 다음페이지\n");
+        sendMsg(sd, "[3] 글보기\n");
+        sendMsg(sd, "[4] 나가기\n");
         recvMsg(sd, buf);
-        if (buf[0] == '\n'){}
+        if (strcmp(buf, "1") == 0){
+            if (page == 0){
+                sendMsg(sd, "clear");
+                sendMsg(sd, "첫번째 페이지입니다.\n");
+            }
+            else{
+                page--;
+                sendMsg(sd, "clear");
+            }
+        }else if (strcmp(buf, "2") == 0){
+            if (page == npage-1){
+                sendMsg(sd, "clear");
+                sendMsg(sd, "마지막 페이지입니다.\n");
+            }else{
+                page++;
+                sendMsg(sd, "clear");
+            }
+        }else if (strcmp(buf, "3") == 0){ // 글보기
+            sendMsg(sd, ">> 번호 입력\n");
+            recvMsg(sd, buf2);
+            no = stoi(buf2) - 1;
+            sendMsg(sd, "clear");
+            showPost(sd, srchPost[no]);
+        }
+        else if (strcmp(buf, "4") == 0){ //나가기
+            sendMsg(sd, "clear");
             break;
+        }
+        else{
+            sendMsg(sd, "잘못 선택함\n");
+            continue;
+        }
     }
-    sendMsg(sd, "clear"); usleep(2000);
-
 }
 
 
 void Club::boardPage(int sd, string mid){
-    int n, menu;
-    char choice[2];
-
-    while (1){
-        showPostList(sd);
-        while (1){
-            sendMsg(sd, "[1] 글보기\n");
-            sendMsg(sd, "[2] 글쓰기\n");
-            sendMsg(sd, "[3] 글삭제\n");
-            sendMsg(sd, "[4] 제목검색\n");
-            sendMsg(sd, "[5] 나가기\n");
-            recvMsg(sd, choice);
-            if(choice[0]=='\n')
-                continue;
-            else
-                break;
-        }       
-        menu = atoi(choice);
-        switch (menu)
-        {
-        case 1: // 글보기
-            sendMsg(sd, "clear"); usleep(2000);
-            postPage(sd);
-            break;
-        case 2: // 글쓰기
-            sendMsg(sd, "clear"); usleep(2000);
-            addPost(sd, mid);
-            break;
-        case 3: // 글삭제
-            sendMsg(sd, "clear"); usleep(2000);
-            delPost(sd, mid);
-            break;
-        case 4: // 검색
-            sendMsg(sd, "clear"); usleep(2000);
-            searchPost(sd);
-            break;
-        case 5: // 나가기
-            sendMsg(sd, "clear"); usleep(2000);
-            return;
-            break;
-        default:
-            sendMsg(sd, "clear"); usleep(2000);
-            sendMsg(sd, ">> 잘못입력했습니다\n");
-            break;
-        }
-    }
+    showArrList(sd, postArr, mid);
 }
 
 void Club::download(int sd){
@@ -219,7 +268,9 @@ void Club::download(int sd){
     FILE* file;
     int nsize, fpsize, fsize;
     
-    while (1){
+    sendMsg(sd, "clear");
+
+    while (1){    
         sendMsg(sd, "다운로드 받을 파일번호 선택\n");
         if (!showfiles(archive, fileList, sd)){
             break;
@@ -230,8 +281,10 @@ void Club::download(int sd){
             continue;
         menu = atoi(choice);
 
-        if (menu == -1)
+        if (menu == fileList.size() + 1){
+            sendMsg(sd, "clear");
             return;
+        }
         else if (menu-1 >= 0 && menu-1 <= fileList.size()){
             // 1. 파일 전송 신호 보내고
             sendMsg(sd, "TrAnSfEr");
@@ -276,6 +329,7 @@ void Club::upload(int sd){
     FILE* file;
     int nsize, fpsize, fsize, filesize;
     
+    sendMsg(sd, "clear");
     while (1){
         sendMsg(sd, "업로드할 파일번호 선택\n");
         usleep(2 * 1000);
@@ -287,8 +341,10 @@ void Club::upload(int sd){
         
         recvMsg(sd, filename);
         cout << "filename: " << filename << endl;
-        if(filename == "-1")
+        if(strcmp(filename, "-1") == 0){
+            sendMsg(sd, "clear");
             return;
+        }
         else {
             // 2. 저장할 파일명 보내기
             sprintf(fullname, "%s/%s", archive, filename);
@@ -345,6 +401,7 @@ void Club::showArchive(int sd){
             srchArchive(sd);
             break;
         case 5:
+            sendMsg(sd, "clear");
             return;
             break;
         default:
@@ -371,14 +428,19 @@ void Club::delArchive(int sd){
             continue;
         menu = atoi(choice);
 
-        if (menu == fileList.size() + 1)
+        if (menu == fileList.size() + 1){
+            sendMsg(sd, "clear");
             return;
+        }
+            
         else if (menu >= 1 && menu <= fileList.size()){
             sprintf(fullname, "%s/%s", archive, fileList[menu-1].c_str());
             remove(fullname);
+            sendMsg(sd, "clear");
             sendMsg(sd, ">> 삭제가 완료되었습니다.\n");
         }
         else{
+            sendMsg(sd, "clear");
             sendMsg(sd, "잘못 선택했습니다\n");
         }
     }
@@ -420,4 +482,15 @@ void Club::srchArchive(int sd){
 		}
 	}
     closedir(dir);
+
+    while(1){
+        sendMsg(sd, "뒤로(-1)\n");
+        recvMsg(sd, buf);
+        if (!strcmp(buf, "-1")){
+            sendMsg(sd, "clear");
+            break;
+        }
+            
+    }
+    
 }

@@ -43,7 +43,6 @@ public:
     void clubPage(int sd, Club* clubPtr, Member& m);
     void chatPage(int clubId, int sd, Member& m);
     void showAllClubs(int sd, Member& m);
-    void searchClub();
     void makeClub(int sd, Member& l);
     bool joinClub(Club* c, Member& m);
     void enterChat(int cid, int sd);
