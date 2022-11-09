@@ -77,7 +77,7 @@ void Manager::clubPage(int sd, Club* clubPtr, Member& m){
     char buf[1024];
 
     while (1){
-        sendMsg(sd, "clear"); usleep(2000);
+        sendMsg(sd, "clear");
         sprintf(buf, "---%s 모임페이지(%d명)---\n", clubPtr->getName().c_str(), clubPtr->getTotalNo());
         sendMsg(sd, buf);
         sprintf(buf, "소개: %s\n", clubPtr->getDesc().c_str());
@@ -148,6 +148,7 @@ void Manager::chatPage(int clubId, int sd, Member& m){
         sprintf(idbuf, "%s님이 채팅창에 입장하셨습니다.\n", m.getId().c_str());
         if(send(fd, idbuf, sizeof(idbuf), 0) == -1)
             perror("send");
+        usleep(2000);
     }
 
     while (1){
@@ -166,22 +167,30 @@ void Manager::chatPage(int clubId, int sd, Member& m){
         if((n = read(sd, recvbuf, sizeof(recvbuf))) == -1){
             perror("read");
         }
-        if (strcmp(recvbuf, "exit") == 0)
+        
+        cout << "before (B):" << recvbuf <<"(" << n << ")" << endl;
+        *(recvbuf+n) = '\n';
+        *(recvbuf+n+1) = '\0';
+        if (strcmp(recvbuf, "exit\n") == 0)
             break;
-        cout << "n bytes: " << n << endl;
-        *(recvbuf+n-1) = '\n';
-        *(recvbuf+n) = '\0';
+        cout << "after :" << recvbuf << endl;
 
         // 전체에 뿌리기
         for(auto fd: it->second){
             if (fd == sd) continue;
+            
             sprintf(idbuf, "[%s] %s", m.getId().c_str(), recvbuf);
-            if(send(fd, idbuf, sizeof(idbuf), 0) == -1)
+            if(send(fd, idbuf, sizeof(idbuf), 0) == -1){
                 perror("send");
+            }
+            usleep(2000);
         }
     }
 
     for(auto fd: it->second){
+        if (fd == sd){
+            sendMsg(sd, "clear");
+        }
         sprintf(idbuf, "%s님이 퇴장하셨습니다.\n", m.getId().c_str());
         if(send(fd, idbuf, sizeof(idbuf), 0) == -1)
             perror("send");
@@ -191,12 +200,13 @@ void Manager::chatPage(int clubId, int sd, Member& m){
 
 void Manager::showAllClubs(int sd, Member& m){
     int menu, menu2, n;
-    int i = 0;
+    int i;
     vector<Club*>::iterator it;
     char buf[1024];
     char choice[2];
 
     while (1){
+        i = 0;
         sendMsg(sd, "---모임 목록---\n");
         for(it=clubArr.begin(); it!=clubArr.end(); it++){
             sprintf(buf, "%d\t%s\t%s\n", ++i, (*it)->getName().c_str(), (*it)->getDesc().c_str());
@@ -222,17 +232,19 @@ void Manager::showAllClubs(int sd, Member& m){
             sendMsg(sd, "모임 번호 선택 >>");
             recvMsg(sd, choice);
             menu2 = atoi(choice);
+            if (menu2 > clubArr.size()){
+                sendMsg(sd, "clear"); 
+                sendMsg(sd, "현재 모임이 없습니다.\n");
+                break;
+            }
             clubPage(sd, *(clubArr.begin()+menu2-1), m);
             break;
         case 2: // 뒤로
+            sendMsg(sd, "clear");
             return;
         }
     }
     
-}
-
-void Manager::searchClub(){
-    cout << "아직 구현 안함" << endl;
 }
 
 void Manager::makeClub(int sd, Member& l){
@@ -293,17 +305,55 @@ void Manager::exitChat(int cid, int sd){
 }
 
 void Manager::showMyClubs(Member& m, int sd){
-    auto cpiter = clubArr.begin(); // Club Pointer Iterator
-    char buf[1024];
-    int i = 0;
+    vector<Club *>::iterator cpiter = clubArr.begin(); // Club Pointer Iterator
+    vector<vector<Club *>::iterator> myclub;
+    char buf[1024], choice[2];
+    int i;
+    int menu, menu2;
 
-    for(int myClub :m.getMyCid()){
-        while ((*cpiter)->getId() != myClub){
-            cpiter++;
+    while (1){
+        i = 0;
+        sendMsg(sd, "---내모임---\n");
+        for(int myClub :m.getMyCid()){
+            while ((*cpiter)->getId() != myClub){
+                cpiter++;
+            }
+            // myClub이랑 같은것일때 빠져나와서 출력
+            myclub.push_back(cpiter);
+            sprintf(buf, "%d\t%s\t%s\n", ++i, (*cpiter)->getName().c_str(), (*cpiter)->getDesc().c_str());
+            sendMsg(sd, buf);
         }
-        // myClub이랑 같은것일때 빠져나와서 출력
-        sprintf(buf, "%d\t%s\t%s\n", ++i, (*cpiter)->getName().c_str(), (*cpiter)->getDesc().c_str());
-        sendMsg(sd, buf);
+        sendMsg(sd, "---------------\n");
+        sendMsg(sd, "[1] 모임 선택\n");
+        sendMsg(sd, "[2] 뒤로\n");
+
+        while (1){
+            sendMsg(sd, "선택>> ");
+            recvMsg(sd, choice);
+            if(choice[0]=='\n')
+                continue;
+            else
+                break;
+        }
+
+        menu = atoi(choice);
+        switch(menu){
+        case 1:
+            sendMsg(sd, "모임 번호 선택 >>");
+            recvMsg(sd, choice);
+            menu2 = atoi(choice); // 1~n까지 size=n일때
+            if (menu2 > myclub.size()){
+                sendMsg(sd, "clear"); 
+                sendMsg(sd, "현재 모임이 없습니다.\n");
+                break;
+            }
+            clubPage(sd, *myclub[menu2-1], m);
+            break;
+        case 2: // 뒤로
+            sendMsg(sd, "clear");
+            return;
+        }
+
     }
 }
 
@@ -323,7 +373,6 @@ void Manager::loadData(ifstream& fin){
 
 void Manager::saveData(){
     FILE *fp;
-
     fp = fopen("userinfo.txt", "w");
 
     for(Member* m: memArr){
@@ -337,5 +386,19 @@ void Manager::saveData(){
         fputs("\n", fp);
     }
     fclose(fp);
+
+    // FILE *fp2;
+    // fp2 = fopen("clubInfo.txt", "w");
+    // for(Club* m: clubArr){
+    //     fputs(to_string(m->getId()).c_str(), fp);
+    //     fputs(",", fp);
+    //     fputs(m->getName().c_str(), fp);
+    //     fputs(",", fp);
+    //     fputs(m->getDesc().c_str(), fp);
+    //     fputs(",", fp);
+    //     fputs(m->getphoneNo().c_str(), fp);
+    //     fputs("\n", fp);
+    // }
+    // fclose(fp2);
 }
 

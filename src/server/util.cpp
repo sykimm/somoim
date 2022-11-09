@@ -1,8 +1,9 @@
 #include "util.h"
-
+#include <unistd.h>
 
 void sendMsg(int sd, string s){
 	send(sd, s.c_str(), s.size(), 0);
+	usleep(2000);
 }
 
 string recvMsg(int sd, char* buf){
