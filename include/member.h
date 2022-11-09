@@ -32,15 +32,9 @@ public:
     string getPW() { return passwd; }
     string getName() { return name; }
     string getphoneNo() { return phoneNo; }
-    bool addPost();
-    bool addReply(int pid);
     void addClub(int cid){
         clubSet.insert(cid);
     }
-    virtual bool delPost(int pid) { return true; }
-    virtual bool delReply(int pid) { return true; }
-    bool like(int pid); // 포스트에 좋아요 눌러줌
-    bool unlike(int pid); // 포스트에 좋아요 해제
     virtual string type() { return "member"; } // member/manager/leader 반환
     set<int> getMyCid() { return clubSet; }
     template<class Archive>
