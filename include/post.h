@@ -11,8 +11,6 @@ class Post {
     string memId; // id
     string title;
     string content;
-    string time;
-    int likes;
     vector<string> replys;
 public:
     static int n;
@@ -26,7 +24,6 @@ public:
     string getWriter() { return memId; }
     string getContent() { return content; }
     void setContent(string s) { this->content = s.substr(0, 500); }
-    void upload(); // time 설정
     void addReply(int sd){
         sendMsg(sd, ">> ");
         char reply[80];
