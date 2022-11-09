@@ -3,7 +3,7 @@
 - 동아리 별 게시판/채팅창/자료실 프로그램
 - 모임을 만들어서 모임원들끼리 위 세 가지 기능을 운영함
 
-<img src="./src/img/umll.PNG">
+<img src="./src/img/umlll.PNG">
 
 <br>
 
